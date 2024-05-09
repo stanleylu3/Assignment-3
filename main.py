@@ -1,8 +1,13 @@
-import FileReader
-import Posting
+from FileReader import FileReader
 
-def run():
-    pass
+
+def start_reading():
+    index_dir = "index"
+    reader = FileReader(index_dir)
+    data_path = "C:\Users\julie\OneDrive\Documents\developer.zip"
+
+    reader.build_index(data_path)
+
 
 if __name__ == "__main__":
-    run()
+    start_reading()
