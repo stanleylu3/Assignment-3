@@ -1,36 +1,73 @@
-from collections import Counter
-
 from bs4 import BeautifulSoup
-import Posting as p
+from Posting import Posting
 import zipfile
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.stem import PorterStemmer
+from collections import defaultdict
+import re
+import os
+import json
+
 
 class FileReader:
+    def __init__(self, index_dir):
+        self.index_dir = index_dir
+        # Initialize inverted index
+        self.index = defaultdict(list)
 
-    def __init__(self):
-        pass
+        # initialize containers to get analytics
+
+        # beginning of serialization of documents
+        self.num_indexed_doc = 0
+        self.total_index_size = 0
+
+    def preprocessing(self, text):
+        # Apply stemming
+        stemmer = PorterStemmer()
+        tokens = word_tokenize(text)
+        stemmed_tokens = [stemmer.stem(token) for token in tokens if token.isalnum()]
+        return stemmed_tokens
 
     def build_index(self, path):
-        # index to be returned at the end of parsing files
-        index = {}
-        # beginning of serialization of documents
-        n = 0
+
+        # loop through all documents and tokenize content
         with zipfile.ZipFile(path, 'r') as files:
-            # loop through all documents and tokenize content
             for file in files.namelist():
                 with files.open(file) as doc:
-                    contents = doc.read().decode('utf-8')
-                    n += 1
+                    contents = doc.read()
                     soup = BeautifulSoup(contents, 'html.parser')
-                    text = soup.get_text() if soup else contents
-                    # replace this with tokenizer
-                    tokens = text.split()
-                    token_freq = Counter(tokens)
-                    for token, freq in token_freq.items():
-                        if token not in index:
-                            #create token in index and create posting object
-                            posting = p.Posting(n, freq)
-                            index[token] = posting
+                    text = soup.get_text().lower()
 
+                    # preprocess text
+                    preprocessing_tokens = self.preprocessing(text)
 
-        return index
+                    # updating inverted index with tokens and postings
+                    for position, token in enumerate(preprocessing_tokens):
+                        if token not in self.index:
+                            self.index[token] = []
+                        if not any(posting.docID == file for posting in self.index[token]):
+                            self.index[token].append(Posting(file))
+                        else:
+                            posting = next(posting for posting in self.index[token] if posting.docID == file)
+                            posting.increment_term_freq()
 
+                    self.num_indexed_doc += 1
+
+        # Calculate total index size
+        self.total_index_size = self.calculate_index_size()
+
+        # Save index to files
+        self.save_index_to_files()
+
+    def calculate_index_size(self):
+        # Serialize the index to JSON and calculate its size
+        serialized_index = json.dumps(self.index)
+        size_in_bytes = len(serialized_index.encode('utf-8'))
+        return size_in_bytes
+
+    def save_index_to_files(self):
+        # Serialize the index to JSON and save it to a file
+        index_file_path = os.path.join(self.index_dir, 'index.json')
+        with open(index_file_path, 'w') as index_file:
+            json.dump(self.index, index_file)
