@@ -20,7 +20,9 @@ class FileReader:
 
         # beginning of serialization of documents
         self.num_indexed_doc = 0
+
         self.total_index_size = 0
+        self.num_unique_words = 0
 
     def preprocessing(self, text):
         # Apply stemming
@@ -46,6 +48,8 @@ class FileReader:
                     for position, token in enumerate(preprocessing_tokens):
                         if token not in self.index:
                             self.index[token] = []
+                            # increment unique words
+                            self.num_unique_words += 1
                         if not any(posting.docID == file for posting in self.index[token]):
                             self.index[token].append(Posting(file))
                         else:
@@ -63,8 +67,11 @@ class FileReader:
     def calculate_index_size(self):
         # Serialize the index to JSON and calculate its size
         serialized_index = json.dumps(self.index)
-        size_in_bytes = len(serialized_index.encode('utf-8'))
-        return size_in_bytes
+
+        # find size in kb
+        size_in_kb = (len(serialized_index.encode('utf-8'))) / 1024
+
+        return size_in_kb
 
     def save_index_to_files(self):
         # Serialize the index to JSON and save it to a file
