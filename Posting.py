@@ -4,3 +4,5 @@ class Posting:
         self.docID = docID
         self.freq = freq
 
+    def to_dict(self):
+        return {"docID": self.docID, "freq": self.freq}
