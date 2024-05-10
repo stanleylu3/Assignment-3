@@ -40,8 +40,14 @@ class FileReader:
                         print(f"Empty file or invalid JSON content in {file}. Continuing to next.")
                         continue
                     num_of_doc += 1
+                    # use beautifulsoup to parse relevant html content
+                    soup = BeautifulSoup(text, 'html.parser')
+                    relevant_tags = soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'span',
+                                                   'title', 'li', 'td', 'th', 'cite', ])
+                    parsed_content = [tag.get_text() for tag in relevant_tags]
+                    final_content = ''.join(parsed_content)
                     tokenizer = RegexpTokenizer(r'\b[a-zA-Z0-9]+\b')
-                    tokens = tokenizer.tokenize(text.lower())
+                    tokens = tokenizer.tokenize(final_content.lower())
                     # added stemming for better textual matches
                     stemmed_tokens = [self.stemmer.stem(token) for token in tokens]
                     # counts stemmed tokens now

@@ -1,13 +1,13 @@
 import FileReader as f
-import Posting
+import sys
 
-def run():
+def run(path):
     reader = f.FileReader()
     # CHANGE PATH
-    path = "C:\\Users\sssl2\Downloads\developer.zip"
+    #path = "C:\\Users\sssl2\Downloads\developer.zip"
     index = reader.build_index(path)
     # CHANGE PATH
-    size = reader.calculate_size(index, "C:\\Users\sssl2\Downloads")
+    size = reader.calculate_size(index, path)
 
     print("Analytics:")
     print(f"Number of documents: {reader.total_docs}")
@@ -15,4 +15,8 @@ def run():
     print(f"Size of Index: {size} KB")
 
 if __name__ == "__main__":
-    run()
+    if  len(sys.argv) != 2:
+        print('Usage: python main.py path_to_zip_folder')
+        sys.exit(1)
+    path = sys.argv[1]
+    run(path)
