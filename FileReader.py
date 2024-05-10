@@ -33,9 +33,10 @@ class FileReader:
                     token_freq = Counter(tokens)
                     for token, freq in token_freq.items():
                         if token not in index:
+                            index[token] = []
                             #create token in index and create posting object
-                            posting = p.Posting(n, freq)
-                            index[token] = posting.to_dict()
+                        posting = p.Posting(n, freq)
+                        index[token].append(posting.to_dict())
 
         self.total_docs = n
         return index
@@ -48,6 +49,6 @@ class FileReader:
         # calculate size in KB
         index_size = os.path.getsize(temp_json) / 1024
         # delete the temp file
-        #os.remove(temp_json)
+        os.remove(temp_json)
 
         return index_size
