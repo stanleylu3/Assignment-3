@@ -28,7 +28,7 @@ class FileReader:
                         print(f"Empty file or invalid JSON content in {file}. Continuing to next.")
                         continue
                     n += 1
-                    tokenizer = RegexpTokenizer(r'\w+')
+                    tokenizer = RegexpTokenizer(r'\b[a-zA-Z0-9]+\b')
                     tokens = tokenizer.tokenize(text.lower())
                     token_freq = Counter(tokens)
                     for token, freq in token_freq.items():
@@ -48,6 +48,6 @@ class FileReader:
         # calculate size in KB
         index_size = os.path.getsize(temp_json) / 1024
         # delete the temp file
-        os.remove(temp_json)
+        #os.remove(temp_json)
 
         return index_size

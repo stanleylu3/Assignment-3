@@ -6,7 +6,7 @@ def run():
     path = "C:\\Users\sssl2\Downloads\developer.zip"
     index = reader.build_index(path)
 
-    size = reader.calculate_size(index, path)
+    size = reader.calculate_size(index, "C:\\Users\sssl2\Downloads")
 
     print("Analytics:")
     print(f"Number of documents: {reader.total_docs}")
