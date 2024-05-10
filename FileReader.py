@@ -1,6 +1,6 @@
 import os.path
 from collections import Counter
-
+from bs4 import BeautifulSoup
 from nltk.tokenize import RegexpTokenizer
 import Posting as p
 import json
@@ -27,9 +27,15 @@ class FileReader:
                     except json.decoder.JSONDecodeError:
                         print(f"Empty file or invalid JSON content in {file}. Continuing to next.")
                         continue
+                    # use beautifulsoup to parse relevant html content
+                    soup = BeautifulSoup(text, 'html.parser')
+                    relevant_tags = soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p','span',
+                                                   'title', 'li', 'td','th', 'cite',])
+                    parsed_content = [tag.get_text() for tag in relevant_tags]
+                    final_content = ''.join(parsed_content)
                     n += 1
                     tokenizer = RegexpTokenizer(r'\b[a-zA-Z0-9]+\b')
-                    tokens = tokenizer.tokenize(text.lower())
+                    tokens = tokenizer.tokenize(final_content.lower())
                     token_freq = Counter(tokens)
                     for token, freq in token_freq.items():
                         if token not in index:

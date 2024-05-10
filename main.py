@@ -3,9 +3,10 @@ import Posting
 
 def run():
     reader = f.FileReader()
+    # CHANGE PATH
     path = "C:\\Users\sssl2\Downloads\developer.zip"
     index = reader.build_index(path)
-
+    # CHANGE PATH
     size = reader.calculate_size(index, "C:\\Users\sssl2\Downloads")
 
     print("Analytics:")
