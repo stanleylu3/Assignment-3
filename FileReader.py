@@ -1,12 +1,12 @@
 import os.path
-from collections import Counter
 import zipfile
 import json
 import warnings
 from bs4 import BeautifulSoup
 from nltk.stem import PorterStemmer
 from nltk.tokenize import RegexpTokenizer
-import Posting as p
+from collections import Counter
+from Posting import Posting
 
 class FileReader:
 
@@ -22,6 +22,8 @@ class FileReader:
         index = {}
         # beginning of serialization of documents
         num_of_doc = 0
+        # dictionary to store doc URLs
+        doc_info = {}
         with zipfile.ZipFile(path, 'r') as files:
             # loop through all documents and tokenize content
             for file in files.namelist():
@@ -30,10 +32,14 @@ class FileReader:
                     try:
                         json_data = json.loads(contents)
                         text = json_data.get('content','')
+                        url = json_data.get('url', 'No URL')
                     except json.decoder.JSONDecodeError:
                         print(f"Empty file or invalid JSON content in {file}. Continuing to next.")
                         continue
                     num_of_doc += 1
+                    # indexes url into dictionary
+                    doc_info[num_of_doc] = {'url': url}
+
                     # use beautifulsoup to parse relevant html content
                     with warnings.catch_warnings():
                         warnings.filterwarnings("ignore", category=UserWarning)
@@ -51,12 +57,18 @@ class FileReader:
                     for token, freq in token_freq.items():
                         if token not in index:
                             index[token] = []
-                            # create token in index and create posting object
-                        posting = p.Posting(num_of_doc, freq)
+                        # create token in index and create posting object with URL
+                        posting = Posting(num_of_doc, freq, url)
                         index[token].append(posting.to_dict())
 
         self.total_docs = num_of_doc
-        return index
+        # saves index and doc info to json files
+        with open('index.json', 'w') as f:
+            json.dump(index, f)
+        with open('doc_info.json', 'w') as f:
+            json.dump(doc_info, f)
+
+        return index, doc_info
 
     def calculate_size(self, index, path):
         # suppress warnings from bs4
