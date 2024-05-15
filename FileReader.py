@@ -7,6 +7,7 @@ from nltk.stem import PorterStemmer
 from nltk.tokenize import RegexpTokenizer
 from collections import Counter
 from Posting import Posting
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 class FileReader:
 
@@ -24,17 +25,15 @@ class FileReader:
         num_of_doc = 0
         # dictionary to store doc URLs
         doc_info = {}
+        # list to store all documents for idf calculation
+        documents = []
         with zipfile.ZipFile(path, 'r') as files:
             # loop through all documents and tokenize content
             for file in files.namelist():
                 with files.open(file) as doc:
                     contents = doc.read().decode('utf-8')
-                    try:
-                        json_data = json.loads(contents)
-                        text = json_data.get('content','')
-                        url = json_data.get('url', 'No URL')
-                    except json.decoder.JSONDecodeError:
-                        print(f"Empty file or invalid JSON content in {file}. Continuing to next.")
+                    text, url = self.process_document(contents)
+                    if text is None:
                         continue
                     num_of_doc += 1
                     # indexes url into dictionary
@@ -45,9 +44,11 @@ class FileReader:
                         warnings.filterwarnings("ignore", category=UserWarning)
                         soup = BeautifulSoup(text, 'html.parser')
                     relevant_tags = soup.find_all(['b','h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'span',
-                                                   'title', 'li', 'td', 'th', 'cite', ])
+                                                   'title', 'li', 'td', 'th', 'cite', 'href'])
                     parsed_content = [tag.get_text() for tag in relevant_tags]
                     final_content = ''.join(parsed_content)
+                    # add content to documents
+                    documents.append(final_content)
                     tokenizer = RegexpTokenizer(r'\b[a-zA-Z0-9]+\b')
                     tokens = tokenizer.tokenize(final_content.lower())
                     # added stemming for better textual matches
@@ -57,9 +58,29 @@ class FileReader:
                     for token, freq in token_freq.items():
                         if token not in index:
                             index[token] = []
-                        # create token in index and create posting object with URL
-                        posting = Posting(num_of_doc, freq, url)
+                        # calculate tf
+                        tf = freq / len(stemmed_tokens)
+                        # create token in index and create posting object
+                        posting = Posting(num_of_doc, freq, tf)
                         index[token].append(posting.to_dict())
+
+        # compute idf scores using sklearn vectorizer
+        vectorizer = TfidfVectorizer()
+        tfidf_matrix = vectorizer.fit_transform(documents)
+        feature_names = vectorizer.get_feature_names_out()
+        idf_scores = vectorizer.idf_
+        del documents[:]
+        # update postings with tfidf score
+        for token, postings in index.items():
+            token_name = feature_names.index(token)
+            idf = idf_scores[token_name]
+            for posting in postings:
+                posting['tf_idf'] = idf * posting['tf']
+                # removes tf and freq to save space in index
+                del posting['tf']
+                del posting ['freq']
+            # sorts token postings based on td-idf score
+            index[token] = sorted(postings, key=lambda x: x['tf_idf'], reverse=True)
 
         self.total_docs = num_of_doc
         # saves index and doc info to json files
@@ -84,3 +105,13 @@ class FileReader:
         os.remove(temp_json)
 
         return index_size
+
+    def process_document(self, contents):
+        try:
+            json_data = json.loads(contents)
+            text = json_data.get('content', '')
+            url = json_data.get('url', 'No URL')
+        except json.decoder.JSONDecodeError:
+            print(f"Empty file or invalid JSON content. Skipping document.")
+            return None, None
+        return text, url

@@ -1,9 +1,9 @@
 class Posting:
 
-    def __init__(self, docID, freq, url):
+    def __init__(self, docID, freq, tf):
         self.docID = docID
         self.freq = freq
-        self.url = url
+        self.tf = tf
 
     def to_dict(self):
-        return {"docID": self.docID, "freq": self.freq, "url": self.url}
+        return {"docID": self.docID, "freq": self.freq, 'tf': self.tf}
