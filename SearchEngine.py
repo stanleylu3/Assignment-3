@@ -24,16 +24,39 @@ class SearchEngine:
 
     def search(self, query):
         # logic that will search index for query
-        pass
+        all_docs = []
+        # sort tokens by least amount of postings
+        sorted_tokens = sorted(query, key=lambda token: len(self.index.get(token, [])))
+        # loops through all tokens and gets postings from index
+        for token in sorted_tokens:
+            postings = self.index.get(token, [])
+            doc_ids = set(posting['docID'] for posting in postings)
+            # adds the list of docIDs if it is empty
+            if all_docs is None:
+                all_docs = doc_ids
+            else:
+                all_docs = all_docs.intersection(doc_ids)
+            # break loop if no docs match
+            if not all_docs:
+                break
 
-    def compute_tf_idf(self, term, docID):
-        # logic that will compute if_idf score
-        pass
+        if all_docs:
+            all_docs = list(all_docs)
+
+        return all_docs if all_docs else []
+
+    def match_docIDs(self, docIDs):
+        urls = []
+        for docID in docIDs:
+            if docID in self.doc_info:
+                urls.append(self.doc_info[docID]['url'])
+        return urls
 
     def run(self):
         while True:
             # asks for user query and prints out result from query
             query = input("Enter your query: ")
-            results = self.search(query)
+            stemmed_tokens = self.tokenize_query(query)
+            results = self.search(stemmed_tokens)
             for result in results:
                 print(result)
