@@ -32,9 +32,9 @@ class SearchEngine:
             postings = self.index.get(token, [])
             doc_ids = set(posting['docID'] for posting in postings)
             # adds the list of docIDs if it is empty
-            if all_docs is None:
+            if not all_docs:
                 all_docs = doc_ids
-            else:
+            elif all_docs:
                 all_docs = all_docs.intersection(doc_ids)
             # break loop if no docs match
             if not all_docs:
@@ -43,13 +43,13 @@ class SearchEngine:
         if all_docs:
             all_docs = list(all_docs)
 
-        return all_docs if all_docs else []
+        return all_docs
 
     def match_docIDs(self, docIDs):
         urls = []
         for docID in docIDs:
-            if docID in self.doc_info:
-                urls.append(self.doc_info[docID]['url'])
+            if str(docID) in self.doc_info:
+                urls.append(self.doc_info[str(docID)]['url'])
         return urls
 
     def run(self):
@@ -58,5 +58,6 @@ class SearchEngine:
             query = input("Enter your query: ")
             stemmed_tokens = self.tokenize_query(query)
             results = self.search(stemmed_tokens)
-            for result in results:
-                print(result)
+            urls = self.match_docIDs(results)
+            for url in urls:
+                print(url)
