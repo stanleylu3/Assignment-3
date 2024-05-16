@@ -24,7 +24,7 @@ class SearchEngine:
 
     def search(self, query):
         # logic that will search index for query
-        all_docs = []
+        all_docs = set()
         # sort tokens by least amount of postings
         sorted_tokens = sorted(query, key=lambda token: len(self.index.get(token, [])))
         # loops through all tokens and gets postings from index

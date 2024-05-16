@@ -3,11 +3,11 @@ import sys
 import FileReader as f
 import SearchEngine as s
 
-def run(path):
-    reader = f.FileReader()
+def run(path, path2):
+    # reader = f.FileReader()
     # path = r"C:\Users\julie\OneDrive\Documents\developer.zip"
-    index, doc_info = reader.build_index(path)
-    engine = s.SearchEngine(index, doc_info)
+    # index, doc_info = reader.build_index(path)
+    engine = s.SearchEngine(path, path2)
     engine.run()
     # size = reader.calculate_size(index, r"C:\Users\julie\OneDrive\Documents\developer.zip")
     #
@@ -17,8 +17,9 @@ def run(path):
     # print(f"Size of Index: {size} KB")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
+    if len(sys.argv) != 3:
         print('Usage: python main.py path_to_zip_folder')
         sys.exit(1)
     path = sys.argv[1]
-    run(path)
+    path2 = sys.argv[2]
+    run(path, path2)

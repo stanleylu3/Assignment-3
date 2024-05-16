@@ -7,7 +7,7 @@ from nltk.stem import PorterStemmer
 from nltk.tokenize import RegexpTokenizer
 from collections import Counter
 from Posting import Posting
-from sklearn.feature_extraction.text import TfidfVectorizer
+import math
 
 class FileReader:
 
@@ -26,7 +26,7 @@ class FileReader:
         # dictionary to store doc URLs
         doc_info = {}
         # list to store all documents for idf calculation
-        documents = []
+        token_df = {}
         with zipfile.ZipFile(path, 'r') as files:
             # loop through all documents and tokenize content
             for file in files.namelist():
@@ -47,8 +47,6 @@ class FileReader:
                                                    'title', 'li', 'td', 'th', 'cite', 'href'])
                     parsed_content = [tag.get_text() for tag in relevant_tags]
                     final_content = ''.join(parsed_content)
-                    # add content to documents
-                    documents.append(final_content)
                     tokenizer = RegexpTokenizer(r'\b[a-zA-Z0-9]+\b')
                     tokens = tokenizer.tokenize(final_content.lower())
                     # added stemming for better textual matches
@@ -63,22 +61,28 @@ class FileReader:
                         # create token in index and create posting object
                         posting = Posting(num_of_doc, freq, tf)
                         index[token].append(posting.to_dict())
+                        # counts how many documents have this token
+                        if token not in token_df:
+                            token_df[token] = 1
+                        else:
+                            token_df[token] += 1
 
-        # compute idf scores using sklearn vectorizer
-        vectorizer = TfidfVectorizer()
-        tfidf_matrix = vectorizer.fit_transform(documents)
-        feature_names = vectorizer.get_feature_names_out()
-        idf_scores = vectorizer.idf_
-        del documents[:]
+        print('Calculating IDF scores...')
+        #calulate IDF score
+        idf_scores = {}
+        for token, df in token_df.items():
+            idf_scores[token] = math.log(num_of_doc / (1 + df))
+
+        print('Updating postings with tf-idf score...')
         # update postings with tfidf score
         for token, postings in index.items():
-            token_name = feature_names.index(token)
-            idf = idf_scores[token_name]
+            idf = idf_scores[token]
             for posting in postings:
                 posting['tf_idf'] = idf * posting['tf']
                 # removes tf and freq to save space in index
                 del posting['tf']
                 del posting ['freq']
+                print(f"idf score for {token} = {idf}")
             # sorts token postings based on td-idf score
             index[token] = sorted(postings, key=lambda x: x['tf_idf'], reverse=True)
 
