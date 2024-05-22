@@ -55,13 +55,14 @@ class FileReader:
                     token_freq = Counter(stemmed_tokens)
                     for token, freq in token_freq.items():
                         if token not in index:
-                            index[token] = []
+                            index[token] = {'postings': [], 'df': 0}
                         # calculate tf
                         tf = freq / len(stemmed_tokens)
                         # create token in index and create posting object
                         posting = Posting(num_of_doc, freq, tf)
-                        index[token].append(posting.to_dict())
+                        index[token]['postings'].append(posting.to_dict())
                         # counts how many documents have this token
+                        # token_df[token] = token_df.get(token, 0) + 1
                         if token not in token_df:
                             token_df[token] = 1
                         else:
@@ -72,19 +73,24 @@ class FileReader:
         idf_scores = {}
         for token, df in token_df.items():
             idf_scores[token] = math.log(num_of_doc / (1 + df))
-
         print('Updating postings with tf-idf score...')
         # update postings with tfidf score
-        for token, postings in index.items():
+        for token, postings_info in index.items():
+            df = token_df[token]
             idf = idf_scores[token]
+            postings = postings_info['postings']
             for posting in postings:
                 posting['tf_idf'] = idf * posting['tf']
                 # removes tf and freq to save space in index
                 del posting['tf']
                 del posting ['freq']
-                print(f"idf score for {token} = {idf}")
             # sorts token postings based on td-idf score
-            index[token] = sorted(postings, key=lambda x: x['tf_idf'], reverse=True)
+            sorted_postings = sorted(postings, key = lambda x: x['tf_idf'], reverse = True)
+            # creates df for each token
+            index[token]['df'] = df
+            print("doc freq:", index[token]['df'])
+            index[token]['postings'] = sorted_postings
+
 
         self.total_docs = num_of_doc
         # saves index and doc info to json files

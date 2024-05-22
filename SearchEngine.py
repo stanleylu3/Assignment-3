@@ -26,10 +26,10 @@ class SearchEngine:
         # logic that will search index for query
         all_docs = set()
         # sort tokens by least amount of postings
-        sorted_tokens = sorted(query, key=lambda token: len(self.index.get(token, [])))
+        sorted_tokens = sorted(query, key=lambda token: self.index.get(token, {'postings': [], 'df': 0})['df'])
         # loops through all tokens and gets postings from index
         for token in sorted_tokens:
-            postings = self.index.get(token, [])
+            postings = self.index.get(token, {}).get('postings', [])
             doc_ids = set(posting['docID'] for posting in postings)
             # adds the list of docIDs if it is empty
             if not all_docs:
