@@ -2,6 +2,7 @@ import json
 from collections import defaultdict
 from nltk.stem import PorterStemmer
 from nltk.tokenize import RegexpTokenizer
+import time
 
 class SearchEngine:
 
@@ -23,6 +24,8 @@ class SearchEngine:
         return stemmed_tokens
 
     def search(self, query):
+        # start time of query
+        start_time = time.time()
         # logic that will search index for query
         all_docs = set()
         # sort tokens by least amount of postings
@@ -42,6 +45,11 @@ class SearchEngine:
 
         if all_docs:
             all_docs = list(all_docs)
+
+        # adding timing functionality to measure runtime of queries
+        end_time = time.time()
+        runtime = end_time - start_time
+        print(f"Query runtime: {runtime:.4f} seconds")
 
         return all_docs
 
