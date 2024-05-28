@@ -5,16 +5,9 @@ import SearchEngine as s
 
 def run(path, path2):
     # reader = f.FileReader()
-    # path = r"C:\Users\julie\OneDrive\Documents\developer.zip"
-    # index, doc_info = reader.build_index(path)
+    # reader.build_final_index(path)
     engine = s.SearchEngine(path, path2)
     engine.run()
-    # size = reader.calculate_size(index, r"C:\Users\julie\OneDrive\Documents\developer.zip")
-    #
-    # print("Analytics:")
-    # print(f"Number of documents: {reader.total_docs}")
-    # print(f"Number of tokens: {len(index)}")
-    # print(f"Size of Index: {size} KB")
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
