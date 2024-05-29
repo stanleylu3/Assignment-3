@@ -1,5 +1,6 @@
 import json
-from collections import defaultdict
+import math
+from collections import defaultdict, Counter
 from nltk.stem import PorterStemmer
 from nltk.tokenize import RegexpTokenizer
 import time
@@ -25,6 +26,42 @@ class SearchEngine:
         tokens = tokenizer.tokenize(query.lower())
         stemmed_tokens = [self.stemmer.stem(token) for token in tokens]
         return stemmed_tokens
+
+    def compute_tf_idf_query(self, query_tokens):
+        # counts tf of tokens in query
+        tf_query = Counter(query_tokens)
+        # initializes dictionary to store td-idf scores
+        query_vector = {}
+
+        for token, tf in tf_query.items():
+            # Calculates tf for query token
+            tf_query[token] = tf / len(query_tokens)
+            if token in self.index:
+                # Calculates idf for token
+                idf = math.log(self.total_docs / (1 + self.index[token]['df']))
+                # Calculate TF-IDF score for the token in the query
+                query_vector[token] = tf_query[token] * idf
+            else:
+                query_vector[token] = 0
+        return query_vector
+
+    def cosine_similarity(self, vec1, vec2):
+        dot_product = sum(vec1[token] * vec2.get(token, 0.0) for token in vec1)
+        # find magnitudes of vectors
+        mag_vec1 = math.sqrt(sum(value ** 2 for value in vec1.values()))
+        mag_vec2 = math.sqrt(sum(value ** 2 for value in vec2.values()))
+        if mag_vec1 == 0 or mag_vec2 == 0:
+            return 0.0
+        # formula
+        return dot_product / (mag_vec1 * mag_vec2)
+
+    # def calculate_doc_scores(self, query_vector, docs):
+    #     doc_scores = {}
+    #     for docID in docs:
+    #         doc_vector = {}
+    #         for token in query_vector:
+    #             postings = self.index.get
+
 
     def search(self, query):
         # start time of query

@@ -73,6 +73,8 @@ class FileReader:
                 idf = idf_scores[token]
                 for posting in postings_info['postings']:
                     posting['tf_idf'] = idf * posting['tf']
+                    # update score in posting dictionary
+                    posting['score'] = posting['tf_idf']
 
                 postings_info['df'] = len(postings_info['postings'])
 
