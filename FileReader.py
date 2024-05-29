@@ -92,15 +92,22 @@ class FileReader:
         final_index = {}
         final_doc_info = {}
 
+        sorted_tokens = []
+        # sort all tokens in all the indexes
         for index, doc_info in partial_indexes:
-            for token, postings_info in index.items():
+            sorted_tokens.extend(index.keys())
+            final_doc_info.update(doc_info)
+
+        sorted_tokens = sorted(set(sorted_tokens))
+        # iterates through sorted tokens and creates final index
+        for token in sorted_tokens:
+            for index, _ in partial_indexes:
+                postings_info = index.get(token, {'postings': [], 'df': 0})
                 if token not in final_index:
                     final_index[token] = {'postings': [], 'df': 0}
                 final_index[token]['postings'].extend(postings_info['postings'])
                 final_index[token]['df'] += postings_info['df']
-
-            final_doc_info.update(doc_info)
-
+        # sort postings by tf-idf score
         for token, postings_info in final_index.items():
             postings_info['postings'].sort(key=lambda x: x['tf_idf'], reverse=True)
 
@@ -146,3 +153,28 @@ class FileReader:
         for index_path, doc_info_path in partial_indexes:
             os.remove(index_path)
             os.remove(doc_info_path)
+
+    def create_positions_index(self, index_path, positions_index_path):
+        token_positions = {}
+        newline_char_length = len('\n'.encode('utf-8'))
+        # load completed index
+        with open(index_path, 'r') as f:
+            # initialize beginning position
+            byte_position = 0
+            # iterate through tokens
+            for line in f:
+                token, data = line.strip().split(': ', 1)
+                token_positions[token] = byte_position
+                byte_position += len(line.encode('utf-8')) + newline_char_length
+
+        with open(positions_index_path, 'w') as f:
+            json.dump(token_positions, f)
+
+    def convert_index_to_txt(self, index_path):
+        with open(index_path, 'r') as f:
+            index = json.load(f)
+
+        with open('index.txt', 'w') as f:
+            for token, data in index.items():
+                f.write(f'{token}: {data}\n')
+
