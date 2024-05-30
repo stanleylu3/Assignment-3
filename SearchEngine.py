@@ -134,13 +134,13 @@ class SearchEngine:
             return None
         try:
             _, data = line.split(': ', 1)
+            # turn data into dictionary
             token_data = eval(data)
             self.cache[token] = token_data
             return token_data
         except json.JSONDecodeError:
             print("error decoding json")
             return None
-
 
     def get_token_df(self, token):
         if token in self.cache:
@@ -154,7 +154,8 @@ class SearchEngine:
         return float('inf')
 
     def preload_cache(self):
-        words = ['computer', 'science', 'informatics', 'professors', 'uci', 'masters', 'irvine', 'students', ]
+        words = ['computer', 'science', 'informatics', 'professors', 'uci', 'masters', 'irvine',
+                 'students', 'undergraduate', 'studies', 'class', 'development']
         words_str = ' '.join(words)
         tokenized = self.tokenize_query(words_str)
         for word in tokenized:
