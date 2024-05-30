@@ -1,8 +1,10 @@
 import json
 import math
+import nltk
 from collections import defaultdict, Counter
 from nltk.stem import PorterStemmer
 from nltk.tokenize import RegexpTokenizer
+from nltk.corpus import stopwords
 import time
 
 class SearchEngine:
@@ -15,6 +17,11 @@ class SearchEngine:
         self.total_docs = len(self.doc_info)
         self.stemmer = PorterStemmer()
         self.cache = {}
+
+        nltk.download('stopwords')
+        self.stopwords = set(stopwords.words('english'))
+
+        self.preload_cache()
 
     def load_json(self, path):
         with open(path, 'r') as f:
@@ -63,41 +70,43 @@ class SearchEngine:
     #             postings = self.index.get
 
 
-    def search(self, query):
+    def search(self, query, top_k = 10):
         # start time of query
         start_time = time.time()
+        # remove stop words from query
+        query = [token for token in query if token not in self.stopwords]
+        # implement conjunctive processing
+        posting_lists = []
         # logic that will search index for query
-        all_docs = set()
-        # sort tokens by least amount of postings
-        sorted_tokens = sorted(query, key=self.get_token_df)
-        # loops through all tokens and gets postings from index
-        for token in sorted_tokens:
+        for token in query:
             if token in self.positions_index:
                 position = self.positions_index[token]
                 token_data = self.read_token_data(self.index, token, position)
-                if token_data is None:
-                    print('no token data')
-                    continue
-                postings = token_data.get('postings', [])
-                doc_ids = set(posting['docID'] for posting in postings)
-                # adds the list of docIDs if it is empty
-                if not all_docs:
-                    all_docs = doc_ids
-                elif all_docs:
-                    all_docs = all_docs.intersection(doc_ids)
-                # break loop if no docs match
-                if not all_docs:
-                    break
+                if token_data:
+                    postings = token_data.get('postings', [])
+                    posting_lists.append(postings)
 
-        if all_docs:
-            all_docs = list(all_docs)
+        posting_lists.sort(key=len)
+
+        if not posting_lists:
+            print('No results found')
+            return []
+
+        result_docs = set(posting['docID'] for posting in posting_lists[0])
+        for postings in posting_lists[1:]:
+            if not result_docs:
+                break
+            current_docs = set(posting['docID'] for posting in postings)
+            result_docs.intersection_update(current_docs)
+
+        result_docs = list(result_docs)[:top_k]
 
         # adding timing functionality to measure runtime of queries
         end_time = time.time()
         runtime = end_time - start_time
         print(f"Query runtime: {runtime:.4f} seconds")
 
-        return all_docs
+        return result_docs
 
     def match_docIDs(self, docIDs):
         urls = []
@@ -126,7 +135,6 @@ class SearchEngine:
         try:
             _, data = line.split(': ', 1)
             token_data = eval(data)
-            print(type(token_data))
             self.cache[token] = token_data
             return token_data
         except json.JSONDecodeError:
@@ -144,3 +152,14 @@ class SearchEngine:
             if token_data is not None:
                 return token_data.get('df', float('inf'))
         return float('inf')
+
+    def preload_cache(self):
+        words = ['computer', 'science', 'informatics', 'professors', 'uci', 'masters', 'irvine', 'students', ]
+        words_str = ' '.join(words)
+        tokenized = self.tokenize_query(words_str)
+        for word in tokenized:
+            if word not in self.cache and word in self.positions_index:
+                position = self.positions_index[word]
+                token_data = self.read_token_data(self.index, word, position)
+                if token_data:
+                    self.cache[word] = token_data
