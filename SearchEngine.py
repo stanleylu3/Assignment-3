@@ -52,6 +52,7 @@ class SearchEngine:
                 query_vector[token] = 0
         return query_vector
 
+
     def cosine_similarity(self, vec1, vec2):
         dot_product = sum(vec1[token] * vec2.get(token, 0.0) for token in vec1)
         # find magnitudes of vectors
@@ -69,15 +70,24 @@ class SearchEngine:
     #         for token in query_vector:
     #             postings = self.index.get
 
-
-    def search(self, query, top_k = 10):
-        # start time of query
+    def search(self, query, top_k=10):
+        # Start time of query
         start_time = time.time()
-        # remove stop words from query
-        query = [token for token in query if token not in self.stopwords]
-        # implement conjunctive processing
+
+        # Tokenize query and compute TF-IDF vector for query
+        query_tokens = self.tokenize_query(query)
+        query_vector = self.compute_tf_idf_query(query_tokens)
+
+        # Remove stop words from query
+        query = [token for token in query_tokens if token not in self.stopwords]
+
+        # Initialize dictionary to store document vectors
+        document_vectors = defaultdict(float)
+
+        # Implement conjunctive processing
         posting_lists = []
-        # logic that will search index for query
+
+        # Logic to search index for query
         for token in query:
             if token in self.positions_index:
                 position = self.positions_index[token]
@@ -99,14 +109,30 @@ class SearchEngine:
             current_docs = set(posting['docID'] for posting in postings)
             result_docs.intersection_update(current_docs)
 
-        result_docs = list(result_docs)[:top_k]
+        # Iterate over query terms and postings to accumulate document vectors
+        for token, postings in zip(query_tokens, posting_lists):
+            for posting in postings:
+                doc_id = posting['docID']
+                if doc_id in result_docs:
+                    # Retrieve TF-IDF score from posting and accumulate in document vector
+                    document_vectors[doc_id] += posting['tf_idf']
 
-        # adding timing functionality to measure runtime of queries
+        # Calculate cosine similarity between query vector and document vectors
+        similarity_scores = {}
+        for doc_id, doc_score in document_vectors.items():
+            # Calculate cosine similarity between query vector and document vector
+            similarity_scores[doc_id] = self.cosine_similarity(query_vector, {doc_id: doc_score})
+
+        # Sort documents by similarity score
+        sorted_docs = sorted(similarity_scores.items(), key=lambda x: x[1], reverse=True)
+        top_k_docs = [doc_id for doc_id, _ in sorted_docs[:top_k]]
+
+        # Adding timing functionality to measure runtime of queries
         end_time = time.time()
         runtime = end_time - start_time
         print(f"Query runtime: {runtime:.4f} seconds")
 
-        return result_docs
+        return top_k_docs
 
     def match_docIDs(self, docIDs):
         urls = []
@@ -119,8 +145,8 @@ class SearchEngine:
         while True:
             # asks for user query and prints out result from query
             query = input("Enter your query: ")
-            stemmed_tokens = self.tokenize_query(query)
-            results = self.search(stemmed_tokens)
+            # stemmed_tokens = self.tokenize_query(query)
+            results = self.search(query)
             urls = self.match_docIDs(results)
             for url in urls:
                 print(url)
