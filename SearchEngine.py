@@ -91,22 +91,28 @@ class SearchEngine:
         if not posting_lists:
             print('No results found')
             return []
-
+        # set intersection for all postings
         result_docs = set(posting['docID'] for posting in posting_lists[0])
         for postings in posting_lists[1:]:
             if not result_docs:
                 break
             current_docs = set(posting['docID'] for posting in postings)
             result_docs.intersection_update(current_docs)
-
-        result_docs = list(result_docs)[:top_k]
+        # sort by tf-idf scores
+        doc_scores = defaultdict(float)
+        for postings in posting_lists:
+            for posting in postings:
+                if posting['docID'] in result_docs:
+                    doc_scores[posting['docID']] += posting['tf_idf']
+        ranked_docs = sorted(doc_scores.items(), key = lambda x: x[1], reverse = True)[:top_k]
+        final_doc_ids = [doc_id for doc_id, score in ranked_docs]
 
         # adding timing functionality to measure runtime of queries
         end_time = time.time()
         runtime = end_time - start_time
         print(f"Query runtime: {runtime:.4f} seconds")
 
-        return result_docs
+        return final_doc_ids
 
     def match_docIDs(self, docIDs):
         urls = []
@@ -158,7 +164,8 @@ class SearchEngine:
 
     def preload_cache(self):
         words = ['computer', 'science', 'informatics', 'professors', 'uci', 'masters', 'irvine',
-                 'students', 'undergraduate', 'studies', 'class', 'development', 'software', 'engineering', 'course']
+                 'students', 'undergraduate', 'studies', 'class', 'development', 'software', 'engineering', 'course',
+                 'graduate', 'program', 'human', 'time', 'machine', 'learning']
         words_str = ' '.join(words)
         tokenized = self.tokenize_query(words_str)
         for word in tokenized:
