@@ -158,7 +158,7 @@ class SearchEngine:
 
     def preload_cache(self):
         words = ['computer', 'science', 'informatics', 'professors', 'uci', 'masters', 'irvine',
-                 'students', 'undergraduate', 'studies', 'class', 'development']
+                 'students', 'undergraduate', 'studies', 'class', 'development', 'software', 'engineering', 'course']
         words_str = ' '.join(words)
         tokenized = self.tokenize_query(words_str)
         for word in tokenized:

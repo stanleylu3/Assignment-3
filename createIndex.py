@@ -11,7 +11,7 @@ def run(path):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print('Usage: python main.py path_to_zip_folder')
+        print('Usage: python createIndex.py path_to_zip_folder')
         sys.exit(1)
     path = sys.argv[1]
     run(path)
