@@ -179,3 +179,6 @@ class FileReader:
         with open('index.txt', 'w') as f:
             for token, data in index.items():
                 f.write(f'{token}: {data}\n')
+
+        # delete index.json file after turning into index.txt
+        os.remove(index_path)
