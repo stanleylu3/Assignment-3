@@ -52,16 +52,15 @@ class SearchEngine:
                 query_vector[token] = 0
         return query_vector
 
-
-    def cosine_similarity(self, vec1, vec2):
-        dot_product = sum(vec1[token] * vec2.get(token, 0.0) for token in vec1)
-        # find magnitudes of vectors
-        mag_vec1 = math.sqrt(sum(value ** 2 for value in vec1.values()))
-        mag_vec2 = math.sqrt(sum(value ** 2 for value in vec2.values()))
-        if mag_vec1 == 0 or mag_vec2 == 0:
-            return 0.0
-        # formula
-        return dot_product / (mag_vec1 * mag_vec2)
+    # def cosine_similarity(self, vec1, vec2):
+    #     dot_product = sum(vec1[token] * vec2.get(token, 0.0) for token in vec1)
+    #     # find magnitudes of vectors
+    #     mag_vec1 = math.sqrt(sum(value ** 2 for value in vec1.values()))
+    #     mag_vec2 = math.sqrt(sum(value ** 2 for value in vec2.values()))
+    #     if mag_vec1 == 0 or mag_vec2 == 0:
+    #         return 0.0
+    #     # formula
+    #     return dot_product / (mag_vec1 * mag_vec2)
 
     # def calculate_doc_scores(self, query_vector, docs):
     #     doc_scores = {}
@@ -70,24 +69,15 @@ class SearchEngine:
     #         for token in query_vector:
     #             postings = self.index.get
 
-    def search(self, query, top_k=10):
-        # Start time of query
+
+    def search(self, query, top_k = 10):
+        # start time of query
         start_time = time.time()
-
-        # Tokenize query and compute TF-IDF vector for query
-        query_tokens = self.tokenize_query(query)
-        query_vector = self.compute_tf_idf_query(query_tokens)
-
-        # Remove stop words from query
-        query = [token for token in query_tokens if token not in self.stopwords]
-
-        # Initialize dictionary to store document vectors
-        document_vectors = defaultdict(float)
-
-        # Implement conjunctive processing
+        # remove stop words from query
+        query = [token for token in query if token not in self.stopwords]
+        # implement conjunctive processing
         posting_lists = []
-
-        # Logic to search index for query
+        # logic that will search index for query
         for token in query:
             if token in self.positions_index:
                 position = self.positions_index[token]
@@ -109,30 +99,14 @@ class SearchEngine:
             current_docs = set(posting['docID'] for posting in postings)
             result_docs.intersection_update(current_docs)
 
-        # Iterate over query terms and postings to accumulate document vectors
-        for token, postings in zip(query_tokens, posting_lists):
-            for posting in postings:
-                doc_id = posting['docID']
-                if doc_id in result_docs:
-                    # Retrieve TF-IDF score from posting and accumulate in document vector
-                    document_vectors[doc_id] += posting['tf_idf']
+        result_docs = list(result_docs)[:top_k]
 
-        # Calculate cosine similarity between query vector and document vectors
-        similarity_scores = {}
-        for doc_id, doc_score in document_vectors.items():
-            # Calculate cosine similarity between query vector and document vector
-            similarity_scores[doc_id] = self.cosine_similarity(query_vector, {doc_id: doc_score})
-
-        # Sort documents by similarity score
-        sorted_docs = sorted(similarity_scores.items(), key=lambda x: x[1], reverse=True)
-        top_k_docs = [doc_id for doc_id, _ in sorted_docs[:top_k]]
-
-        # Adding timing functionality to measure runtime of queries
+        # adding timing functionality to measure runtime of queries
         end_time = time.time()
         runtime = end_time - start_time
         print(f"Query runtime: {runtime:.4f} seconds")
 
-        return top_k_docs
+        return result_docs
 
     def match_docIDs(self, docIDs):
         urls = []
@@ -145,11 +119,14 @@ class SearchEngine:
         while True:
             # asks for user query and prints out result from query
             query = input("Enter your query: ")
-            # stemmed_tokens = self.tokenize_query(query)
-            results = self.search(query)
+            stemmed_tokens = self.tokenize_query(query)
+            results = self.search(stemmed_tokens)
             urls = self.match_docIDs(results)
-            for url in urls:
-                print(url)
+            if not urls:
+                print("No URLS found for your query")
+            else:
+                for url in urls:
+                    print(url)
 
     def read_token_data(self, file, token, start_position):
         if token in self.cache:
